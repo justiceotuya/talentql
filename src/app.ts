@@ -56,9 +56,9 @@ const startApp = async () => {
 
         if (status == "DATA") {
             newHtml = tableData.map(data => {
-                const { row, age, gender } = data
+                const { id, row, age, gender } = data
                 return `
-        <tr>
+        <tr data-entryid="${id}">
         <td>${row}</td>
         <td>${age}</td>
         <td>${gender}</td>
