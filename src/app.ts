@@ -1,8 +1,27 @@
-import {
+interface ResultResponse {
+    results: {
+        [key: number]: TResultData[],
+        paging?: TPaging
+    }[]
+}
+type TResultData = {
+    id: string,
+    row: number,
+    age: number,
+    gender: string
+}
+type TpaginationData = Record<number, TResultData[]>
+type TPaging = {
+    next: string,
+    previous?: string
+}
+
+export {
     ResultResponse,
     TResultData,
     TpaginationData,
-} from './types'
+}
+
 
 
 const startApp = async () => {
@@ -41,8 +60,8 @@ const startApp = async () => {
         } else {
             fetchData(page).then(data => {
                 //the api result returns the page number and page number + 1 as keys, we would like to cache it so that we dont make such round trip again
-                const { paging, ...restData } = data.results[0]
-                dataStore = { ...dataStore, ...restData }
+                delete data?.results[0]?.paging
+                Object.assign(dataStore, data?.results[0]);
                 tableData = dataStore[page]
                 currentPage = page
                 renderData()
