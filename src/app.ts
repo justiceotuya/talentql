@@ -22,6 +22,7 @@ let currentPage = 1;
 let tableData: TResultData[] = [];
 let dataStore: TpaginationData = {};
 let loadStatus: "LOADING" | "DATA" | "ERROR" | "IDLE" = "IDLE";
+let nextData: TResultData[]
 
 let dataSink: HTMLTableColElement | null = document.querySelector('[ data-sink]');
 let dataLoading: HTMLParagraphElement | null = document.querySelector('[ data-loading]');
@@ -48,17 +49,20 @@ async function fetchData(page: number): Promise<ResultResponse> {
 
 async function getData(page: number): Promise<void> {
       //return the data from cache
-      if (dataStore[page]) {
-            tableData = dataStore[page]
-            currentPage = page
+      if (currentPage % 2 !== 0 && !!tableData.length) {
+            tableData = nextData
+            nextData = {}
+            currentPage++
             renderData()
       } else {
             fetchData(page).then(data => {
                   //the api result returns the page number and page number + 1 as keys, we would like to cache it so that we dont make such round trip again
                   delete data?.results[0]?.paging
-                  Object.assign(dataStore, data?.results[0]);
-                  tableData = dataStore[page]
-                  currentPage = page
+                  let result = Object.values(data?.results[0])
+
+                  tableData = result[0]
+                  nextData = result[1]
+                  currentPage !== 1 && currentPage++
                   renderData()
             });
       }
@@ -74,8 +78,8 @@ const renderData = () => {
                   return `
         <tr data-entryid="${id}">
         <td>${row}</td>
-        <td>${gender}</td>
         <td>${age}</td>
+        <td>${gender}</td>
         </tr>
         `
             })
