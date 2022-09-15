@@ -98,7 +98,6 @@ const renderData = () => {
 
 async function getData(type: "NEXT" | "PREVIOUS"): Promise<void> {
       if (type === "PREVIOUS" && !!paging?.previous) {
-            currentPage = paging.previous.split("page=")[1]
             fetchData(currentPage).then(data => {
                   let result = Object.entries(data?.results[0])
                   paging = result.splice(2, 1)[0][1]
@@ -141,6 +140,7 @@ const goToNextPage = () => {
 }
 
 const goToPreviousPage = () => {
+      currentPage--
       getData("PREVIOUS")
 }
 
