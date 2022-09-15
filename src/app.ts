@@ -23,6 +23,7 @@ let tableData: TResultData[] = [];
 let dataStore: TpaginationData = {};
 let loadStatus: "LOADING" | "DATA" | "ERROR" | "IDLE" = "IDLE";
 let nextData: TResultData[]
+let paging = {}
 
 let dataSink: HTMLTableColElement | null = document.querySelector('[ data-sink]');
 let dataLoading: HTMLParagraphElement | null = document.querySelector('[ data-loading]');
@@ -44,28 +45,6 @@ async function fetchData(page: number): Promise<ResultResponse> {
       loadStatus = "DATA"
       const result = await response.json();
       return result;
-}
-
-
-async function getData(page: number): Promise<void> {
-      //return the data from cache
-      if (currentPage % 2 !== 0 && !!tableData.length) {
-            tableData = nextData
-            nextData = {}
-            currentPage++
-            renderData()
-      } else {
-            fetchData(page).then(data => {
-                  //the api result returns the page number and page number + 1 as keys, we would like to cache it so that we dont make such round trip again
-                  delete data?.results[0]?.paging
-                  let result = Object.values(data?.results[0])
-
-                  tableData = result[0]
-                  nextData = result[1]
-                  currentPage !== 1 && currentPage++
-                  renderData()
-            });
-      }
 }
 
 const renderData = () => {
@@ -106,7 +85,7 @@ const renderData = () => {
             dataSink.innerHTML = newHtml.toString()
             const retryBtn: HTMLButtonElement | null = document.querySelector("#retryBtn")
             retryBtn?.addEventListener("click", () => {
-                  getData(currentPage)
+                  getData(currentPage, "OTHER")
             });
 
       }
@@ -117,12 +96,52 @@ const renderData = () => {
 }
 
 
+async function getData(type: "NEXT" | "PREVIOUS"): Promise<void> {
+      if (type === "PREVIOUS" && !!paging?.previous) {
+            currentPage = paging.previous.split("page=")[1]
+            fetchData(currentPage).then(data => {
+                  let result = Object.entries(data?.results[0])
+                  paging = result.splice(2, 1)[0][1]
+                  dataStore = result.map(item => {
+                        return { page: Number(item[0]), data: item[1] }
+                  })
+                  tableData = dataStore[0].data
+                  renderData()
+            })
+
+      }
+      //return the data from cache
+      if (type === "NEXT") {
+            if (dataStore[1]?.page === currentPage + 1) {
+                  tableData = dataStore[1].data
+                  renderData()
+            }
+            else {
+                  fetchData(currentPage).then(data => {
+                        //the api result returns the page number and page number + 1 as keys, we would like to cache it so that we dont make such round trip again
+                        // let result = Object.values(data?.results[0])
+                        let result = Object.entries(data?.results[0])
+                        paging = result.splice(2, 1)[0][1]
+                        dataStore = result.map(item => {
+                              return { page: Number(item[0]), data: item[1] }
+                        })
+                        tableData = dataStore[0].data
+                        renderData()
+                        // type === "NEXT" && currentPage++
+                  });
+            }
+      }
+}
+
+
+
 const goToNextPage = () => {
-      getData(currentPage + 1)
+      currentPage++
+      getData('NEXT')
 }
 
 const goToPreviousPage = () => {
-      getData(currentPage - 1)
+      getData("PREVIOUS")
 }
 
 
@@ -134,7 +153,7 @@ const nextButton = next as HTMLButtonElement
 previousButton.addEventListener("click", goToPreviousPage)
 nextButton.addEventListener("click", goToNextPage)
 
-getData(currentPage)
+getData("NEXT")
 const startApp = async () => {
 };
 
