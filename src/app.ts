@@ -111,7 +111,7 @@ async function getData(type: "NEXT" | "PREVIOUS"): Promise<void> {
       }
       //return the data from cache
       if (type === "NEXT") {
-            if (dataStore[1]?.page === currentPage + 1) {
+            if (dataStore[1]?.page === currentPage) {
                   tableData = dataStore[1].data
                   renderData()
             }
